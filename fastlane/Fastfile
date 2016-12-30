@@ -1,0 +1,368 @@
+# ENV["CRASHLYTICS_API_TOKEN"] = 
+# ENV["CRASHLYTICS_BUILD_SECRET"] = 
+# ENV["SLACK_URL"] = 
+# ENV["DELIVER_PASSWORD"] = 
+# ENV["PILOT_USERNAME"] = 
+# ENV["MATCH_PASSWORD"] = 
+# ENV["DELIVER_USER"] = 
+# ENV["GITHUB_TOKEN"] = 
+# team_id = 
+
+# def proj 
+# 	{
+# 		plist: "./PATH_TO_PROJECT/Info.plist",
+# 		xcodeproj: "./PATH_TO_PROJECT.xcodeproj/"
+# 		repo_url: "https://github.com/MyTeam/fastlane",
+#     scheme: "MyProject"
+#     scheme_prod: "MyProject-Prod"
+#     fabric_testers: "MyProject-Prod"
+# 	}
+
+# def cocoapods 
+# 	{
+# 		private_repo: "my_private_repo",
+#     private_repo_name: "my_private_repo",
+# 		private_repo_git_url: "git@github.com:MyTeam/my_private_repo.git",
+# 		podspec: "./MyPod.podspec",
+#		  pod_name: "MyPod"
+# 	}
+
+#---------------------------------- Let's do some testing ----------------------------------#
+
+
+#----------------------- Add new devices ------------------------#
+
+desc "Add new device"
+lane :device do
+	device_name = prompt(text: 'What is the device name: ')
+	device_UDID = prompt(text: 'What is the device UDID: ')
+	register_devices(devices: {device_name => device_UDID})
+  rematch
+end
+
+#----------------------- Renew provisionning profiles ------------------------#
+
+desc "Renew provisionning profiles"
+lane :rematch do
+  match(type: "appstore")
+  match(type: "adhoc",force_for_new_devices: true)
+  match(type: "development",force_for_new_devices:true)
+end
+
+#---------------------------------- Update version number ----------------------------------#
+
+def get_version_short_string
+  if (proj[:plist] == nil)
+    raise "Your fastlane File is missing a plist variable: proj[:plist] = './PATH_TO_PROJECT/Info.plist' ".red
+  end
+  get_info_plist_value(path: proj[:plist], key: 'CFBundleShortVersionString')
+end
+
+desc "Change version number with prompt"
+lane :change_version_number do
+  number = prompt(text: 'Version number: ')
+  version_number = update_version_number_and_commit(number:number)
+  version_number
+end
+
+desc "Increment Patch version"
+lane :patch do 
+  version_number = update_version_number_and_commit(bump_type:"patch")
+  version_number
+end
+
+desc "Increment minor version"
+lane :minor do 
+  version_number = update_version_number_and_commit(bump_type:"minor")
+  version_number
+end  
+
+desc "Increment major version"
+lane :major do 
+  version_number = update_version_number_and_commit(bump_type:"major")
+  version_number
+end
+
+private_lane :update_version_number_and_commit do |options|
+  ensure_git_status_clean
+  new_version_number = options[:number]
+  bump_type = options[:bump_type]
+  if (proj[:xcodeproj] == nil)
+    raise "Your fastlane File is missing a xcodeproj variable: proj[:xcodeproj] = './PATH_TO_PROJECT.xcodeproj/' ".red
+  end
+  if proj[:xcodeproj]
+    if new_version_number
+      increment_version_number(version_number: new_version_number,
+        xcodeproj: proj[:xcodeproj])
+    elsif bump_type
+      increment_version_number(bump_type: bump_type,xcodeproj: proj[:xcodeproj])
+    else
+      increment_version_number(xcodeproj: proj[:xcodeproj])
+    end
+    version_number = get_version_short_string
+    sh "git commit -am \"Change version number: #{version_number} \" "
+    version_number
+  end
+end
+
+
+#---------------------------------- Update build number ----------------------------------#
+
+desc "bump build version and commit"
+
+lane :bump do    
+  increment_build_number
+  build_number = lane_context[SharedValues::BUILD_NUMBER]
+  sh "git commit -am \"Build version bump: #{build_number} [ci skip]\""
+  build_number
+end
+
+
+#----------------------- Create Pull Request from the current branch  ---------------------#
+
+desc "Create a pull request from the current branch"
+lane :pr do
+  ok = system("which hub > /dev/null 2>&1")
+  if (ok == false)
+    raise "Please install https://github.com/github/hub".yellow
+  end
+  ensure_git_status_clean
+  branch = git_branch
+  if (branch == "master") ||(branch == "develop")
+    raise "You can't open a Pull Request from this branch".yellow
+  else
+    UI.success "it is ok you are on branch :#{branch}".green
+    sh "git push origin #{branch}"
+  end
+  pr_title = prompt(text: 'Type pull request title:')
+  sh "hub issue"
+  desc = prompt(text: 'Do you want add a description? It\'s always better :).',boolean:true)
+  prompt_text = "Type pull request description: Fixing any issues? Just write: fixed #issueNumber. "
+  pr_description = desc ? prompt(text: prompt_text) : ""
+  sh "touch pr_file"
+  write = open('pr_file', 'w')
+  write.write(pr_title)
+  write.write("\n")
+  write.write(pr_description)
+  write.close
+
+  pr_link = sh "hub pull-request -F pr_file"
+  sh "rm pr_file"
+  clipboard(value:pr_link)
+  slack(
+    message: "PR opened on #{proj[:repo_url]}",
+    payload: {
+      'title' => pr_title,
+      'link' => pr_link
+      })
+end
+
+#---------------------------- Tag version for App Store Release --------------------------#
+
+desc "Tag the current repo status for App Store Release"
+lane :tag_the_release do
+  build_number = get_build_number
+  version_number = get_version_short_string
+  time = Time.now
+  sh "git tag -a #{version_number}_#{build_number} -m \"Version #{version_number}_#{build_number} submitted to the App Store - #{time.strftime("%d %b %Y")}\""
+end
+
+#---------------------------------- Cocoapods helpers ----------------------------------#
+
+lane :install_private_repo do
+  pod_repo_is_installed = sh "bundle exec pod repo | grep #{cocoapods[:private_repo_name]} | wc -l"
+  pod_repo_is_installed = pod_repo_is_installed.to_i
+  line_to_compare = 1
+  if (pod_repo_is_installed <= line_to_compare)
+    sh "bundle exec pod repo add #{cocoapods[:private_repo_name]} #{cocoapods[:private_repo_git_url]}"
+  end
+end
+
+lane :publish_pod do
+ ensure_git_status_clean
+ install_private_repo
+ sh "bundle exec pod repo push #{cocoapods[:my_private_repo]} .#{cocoapods[:podspec]} --sources='#{cocoapods[:private_repo_git_url]},https://github.com/CocoaPods/Specs.git' --allow-warnings"
+end
+
+lane :lint_pod do
+ install_private_repo
+ sh "bundle exec pod spec lint .#{cocoapods[:podspec]} --sources='#{cocoapods[:private_repo_git_url]},https://github.com/CocoaPods/Specs.git' --allow-warnings --quick"
+end
+
+desc "Create a new tag and publish the new pod you can pass : force"
+lane :tag_and_pod do |options|   
+  install_private_repo
+  ensure_git_status_clean
+  sh "git fetch --tags"
+  last_tag = last_git_tag
+  version_number = get_info_plist_value(path: proj[:plist], key: 'CFBundleShortVersionString')
+  if (Gem::Version.new(last_tag) >= Gem::Version.new(version_number))
+    if options[:force] 
+      version_number = patch
+    else
+      raise "There is already a tag with this number version. If you want to force create a tag do: fastlane tag force:true \nYou should first update the version number with : fastlane patch | fastlane minor | fastlane major".yellow
+    end
+  else
+    UI.success "it is ok, all good! #{last_tag} != #{version_number}💪".green
+  end
+  change_log = sh "git log #{last_tag}..HEAD --pretty=format:\"* %s - %an\""
+  readme = File.read(changelogFile)
+  write = open(changelogFile, 'w')
+  write.write("##  ")
+  write.write(version_number)
+  write.write("\n")
+  write.write(change_log)
+  write.write("\n")
+  write.write("\n")
+  write.write(readme)
+  write.close
+
+  version_bump_podspec(path: podspec, version_number: version_number)
+  sh "git commit -am \"Publish pod version: #{version_number} [ci skip]\""
+  add_git_tag(tag: version_number)
+  push_git_tags
+  publish_pod
+  push_to_git_remote
+
+  slack(
+    message: "Publish new pod version for #{cocoapods[:pod_name]}",
+    payload: {
+      'Version' => version_number,
+      'Repository' => proj[:repo_url],
+      })
+end
+
+#---------------------------------- Testing Lane ----------------------------------#
+
+desc "Run test for scheme"
+lane :testing do
+  xcpretty_json_formatter_installed = sh "bundle exec gem list | grep xcpretty-json-formatter | wc -l"
+  xcpretty_json_formatter_installed = xcpretty_json_formatter_installed.to_i
+  if (xcpretty_json_formatter_installed == 1)
+    slack(message:"[-----:bike:-] Testing and Exporting Reports")
+    scan(scheme:"#{proj[:scheme]}",
+      clean:true,
+      formatter:"xcpretty-json-formatter",
+      code_coverage:true)
+  else
+    slack(message:"[-----:bike:-] Testing without Reports")
+    scan(scheme:"#{proj[:scheme]}",
+        clean:true,
+        code_coverage:true)
+  end
+  slack(message:"[:bike:------] Finish testing")
+end
+
+#----------------------- Create Snapshots to tests if autolayout is OK ------------------------#
+
+desc "Create Snapshots"
+
+lane :snap do
+  snapshot(stop_after_first_error:false, reinstall_app:true, scheme:"UITests", languages:["pt_BR"],devices:["iPhone 4s","iPad 2","iPad Pro", "iPhone 5", "iPhone 6", "iPhone 6 Plus"])
+  slack(message: "Time to check the pictures")
+  clean_build_artifacts
+end
+
+#----------------------------- Generate building time reports -----------------------------#
+
+desc "Profiling building times" 
+lane :building_time do
+  sh "xcodebuild -workspace ../#{proj[:scheme]}.xcworkspace -scheme #{proj[:scheme]} clean build OTHER_SWIFT_FLAGS=\"-Xfrontend -debug-time-function-bodies\" | grep .[0-9]ms | grep -v ^0.[0-9]ms | sort -nr > build_time_report.txt"
+end
+
+#---------------------------- Submit last build to the app store --------------------------#
+
+desc "Submit new version to the app store using last build"
+lane :submit do
+  deliver(
+    submit_for_review: true,
+    force:true,
+    skip_metadata:true,
+    skip_screenshots:true,
+    submission_information:
+    ({
+     add_id_info_limits_tracking:true,
+     add_id_info_serves_ads:false,
+     add_id_info_tracks_action:true,
+     add_id_info_tracks_install:true,
+     add_id_info_uses_idfa:true,
+     export_compliance_compliance_required:false,
+     export_compliance_encryption_updated:false,
+     export_compliance_uses_encryption:false
+     })
+    )
+
+  tag_the_release
+
+end
+
+#----------------------- Create and upload build to the App Store ------------------------#
+
+desc "Deploy a new version to the App Store"
+lane :prod do |options|
+  ensure_git_status_clean
+  scan(scheme:"#{proj[:scheme]}")
+  create_ipa_for_prod
+  pilot(skip_submission: true, skip_waiting_for_build_processing: true)
+  push_to_git_remote
+  slack(
+    message: "Publish new build in Production",
+    payload: {
+      'Version' => version_number,
+      'Build' => build_number,
+    })
+  clean_build_artifacts
+end
+
+#----------------------- Create ipa for production ------------------------#
+
+private_lane :create_ipa_for_prod do
+  match(type: "appstore",verbose:false)
+  gym(
+    verbose:true,
+    configuration: "Release",
+    scheme: "#{proj[:scheme_prod]}",
+    silent: false,
+    clean: true,
+    xcargs: "ARCHIVE=YES" # Used to tell the Fabric run script to upload dSYM file
+    )
+end
+
+#----------------------- Create and upload build to the Fabric ------------------------#
+
+lane :fabric do |options|
+ 
+  ensure_git_status_clean
+  build_number = get_build_number
+  version_number = get_version_short_string
+  note = options[:note]
+  if (note == nil)
+    ci = is_ci
+    if (ci == true) 
+      note = "Build Version-#{version_number}_(#{build_number})"
+    else
+      note = prompt(text: 'Release note for fabric: ')
+    end
+  end
+  shield = "Version-#{version_number}_(#{build_number})-blue"
+  badge(shield: shield,shield_no_resize: true, no_badge: false)
+  create_ipa_for_fabric
+  note = options[:note]
+  crashlytics(notes: note, groups: ["#{proj[:fabric_testers]}"])
+  clean_build_artifacts
+end
+
+
+#----------------------- Create ipa for fabric ------------------------#
+private_lane :create_ipa_for_fabric do
+
+  match(app_identifier: "com.vivareal.MPublisher.beta", type: "adhoc", force_for_new_devices: true)
+  ENV["PROFILE_UUID"] = lane_context[SharedValues::SIGH_UDID]
+  gym(configuration: "AdHoc",
+    scheme: "#{proj[:scheme_qa]}",
+    silent: true,
+    clean: true,
+    export_method: 'ad-hoc',
+        xcargs: "ARCHIVE=YES" # Used to tell the Fabric run script to upload dSYM file
+        )
+end
