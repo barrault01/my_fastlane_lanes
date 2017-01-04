@@ -302,6 +302,8 @@ desc "Deploy a new version to the App Store"
 lane :prod do |options|
   ensure_git_status_clean
   scan(scheme:"#{proj[:scheme]}")
+  build_number = bump
+  version_number = get_version_short_string
   create_ipa_for_prod
   pilot(skip_submission: true, skip_waiting_for_build_processing: true)
   push_to_git_remote
