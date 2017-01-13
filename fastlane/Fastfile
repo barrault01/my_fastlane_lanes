@@ -181,7 +181,7 @@ end
 lane :publish_pod do
  ensure_git_status_clean
  install_private_repo
- sh "bundle exec pod repo push #{cocoapods[:my_private_repo]} .#{cocoapods[:podspec]} --sources='#{cocoapods[:private_repo_git_url]},https://github.com/CocoaPods/Specs.git' --allow-warnings"
+ sh "bundle exec pod repo push #{cocoapods[:private_repo_name]} .#{cocoapods[:podspec]} --sources='#{cocoapods[:private_repo_git_url]},https://github.com/CocoaPods/Specs.git' --allow-warnings"
 end
 
 lane :lint_pod do
@@ -217,7 +217,7 @@ lane :tag_and_pod do |options|
   write.write(readme)
   write.close
 
-  version_bump_podspec(path: podspec, version_number: version_number)
+  version_bump_podspec(path: "#{cocoapods[:podspec]}", version_number: version_number)
   sh "git commit -am \"Publish pod version: #{version_number} [ci skip]\""
   add_git_tag(tag: version_number)
   push_git_tags
