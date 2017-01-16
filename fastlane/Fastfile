@@ -236,6 +236,10 @@ end
 
 desc "Run test for scheme"
 lane :testing do
+  ci = is_ci
+  if (ci == true) 
+    reset_simulator_contents
+  end
   xcpretty_json_formatter_installed = sh "bundle exec gem list | grep xcpretty-json-formatter | wc -l"
   xcpretty_json_formatter_installed = xcpretty_json_formatter_installed.to_i
   if (xcpretty_json_formatter_installed == 1)
