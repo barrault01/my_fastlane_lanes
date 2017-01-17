@@ -14,7 +14,8 @@
 # 		xcodeproj: "./PATH_TO_PROJECT.xcodeproj/"
 # 		repo_url: "https://github.com/MyTeam/fastlane",
 #     scheme: "MyProject"
-#     scheme_prod: "MyProject-Prod"
+#     scheme_prod: "MyProject-Prod",
+#     app_identifier_for_qa: "my.company.app.beta",
 #     fabric_testers: "MyProject-Prod"
 # 	}
 
@@ -221,9 +222,8 @@ lane :tag_and_pod do |options|
   sh "git commit -am \"Publish pod version: #{version_number} [ci skip]\""
   add_git_tag(tag: version_number)
   push_git_tags
-  publish_pod
   push_to_git_remote
-
+  publish_pod
   slack(
     message: "Publish new pod version for #{cocoapods[:pod_name]}",
     payload: {
@@ -362,7 +362,11 @@ end
 #----------------------- Create ipa for fabric ------------------------#
 private_lane :create_ipa_for_fabric do
 
-  match(app_identifier: "com.vivareal.MPublisher.beta", type: "adhoc", force_for_new_devices: true)
+  if (note == nil)
+    match(type: "adhoc", force_for_new_devices: true)
+  else
+    match(app_identifier: "#{proj[:app_identifier_for_qa]}", type: "adhoc", force_for_new_devices: true)
+  end
   ENV["PROFILE_UUID"] = lane_context[SharedValues::SIGH_UDID]
   gym(configuration: "AdHoc",
     scheme: "#{proj[:scheme_qa]}",
