@@ -353,7 +353,6 @@ lane :fabric do |options|
   shield = "Version-#{version_number}_(#{build_number})-blue"
   badge(shield: shield,shield_no_resize: true, no_badge: false)
   create_ipa_for_fabric
-  note = options[:note]
   crashlytics(notes: note, groups: ["#{proj[:fabric_testers]}"])
   clean_build_artifacts
 end
@@ -362,10 +361,10 @@ end
 #----------------------- Create ipa for fabric ------------------------#
 private_lane :create_ipa_for_fabric do
 
-  if (note == nil)
-    match(type: "adhoc", force_for_new_devices: true)
-  else
+  if proj[:app_identifier_for_qa]
     match(app_identifier: "#{proj[:app_identifier_for_qa]}", type: "adhoc", force_for_new_devices: true)
+  else
+    match(type: "adhoc", force_for_new_devices: true)
   end
   ENV["PROFILE_UUID"] = lane_context[SharedValues::SIGH_UDID]
   gym(configuration: "AdHoc",
