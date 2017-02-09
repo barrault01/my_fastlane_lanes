@@ -122,7 +122,7 @@ end
 #----------------------- Create Pull Request from the current branch  ---------------------#
 
 desc "Create a pull request from the current branch"
-lane :pr do
+lane :pr do |options|
   ok = system("which hub > /dev/null 2>&1")
   if (ok == false)
     raise "Please install https://github.com/github/hub".yellow
@@ -146,8 +146,13 @@ lane :pr do
   write.write("\n")
   write.write(pr_description)
   write.close
+  if options[:base] 
+    base = options[:base]
+    pr_link = sh "hub pull-request -F pr_file -b #{base}"
+  else
+    pr_link = sh "hub pull-request -F pr_file"
+  end
 
-  pr_link = sh "hub pull-request -F pr_file"
   sh "rm pr_file"
   clipboard(value:pr_link)
   slack(
