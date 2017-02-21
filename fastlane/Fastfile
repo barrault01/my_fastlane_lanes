@@ -146,10 +146,15 @@ lane :pr do |options|
   write.write("\n")
   write.write(pr_description)
   write.close
+  
+  if defined? proj[:default_branch] 
+    base = proj[:default_branch]
+  end
+
   if options[:base] 
     base = options[:base]
     pr_link = sh "hub pull-request -F pr_file -b #{base}"
-  else
+  else 
     pr_link = sh "hub pull-request -F pr_file"
   end
 
