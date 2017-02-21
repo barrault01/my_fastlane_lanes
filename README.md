@@ -55,7 +55,9 @@ Then declare the informations of your project like this:
      	scheme_prod: "MyProject-Prod",
      	scheme_qa: "MyProject-Beta,
      	app_identifier_for_qa: "my.company.myapp.beta", #optional use this if you have different app identifier between QA and prod
-        fabric_testers: 'vivapro---ios'
+        fabric_testers: 'vivapro---ios',
+        default_branch: 'develop'
+
 	}
 
 If your project is a pod: 
