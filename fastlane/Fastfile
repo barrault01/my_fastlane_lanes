@@ -253,12 +253,14 @@ lane :testing do
     slack(message:"[-----:bike:-] Testing and Exporting Reports")
     scan(scheme:"#{proj[:scheme]}",
       clean:true,
+      include_simulator_logs:false,
       formatter:"xcpretty-json-formatter",
       code_coverage:true)
   else
     slack(message:"[-----:bike:-] Testing without Reports")
     scan(scheme:"#{proj[:scheme]}",
         clean:true,
+        include_simulator_logs:false,
         code_coverage:true)
   end
   slack(message:"[:bike:------] Finish testing")
