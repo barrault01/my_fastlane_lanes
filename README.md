@@ -1,6 +1,6 @@
 ## My fastlane lanes :rocket:
 
-By the end of 2014, I discovered a project that was going to save me hours every weeks: [fastlane](https://github.com/fastlane/fastlane) by [KrauseFx](https://github.com/KrauseFx). After using it locally on my mac, setting it up on my college's macs, putting it on our CI, today is part of our daily routine. I created lanes that we share between our projects, this repository contain this lanes. It is not perfect but I hope it will help.
+By the end of 2014, I discovered a project that was going to save me hours every week: [fastlane](https://github.com/fastlane/fastlane) by [KrauseFx](https://github.com/KrauseFx). After using it locally on my Mac, setting it up on my college's Macs, putting it on our CI, today is part of our daily routine. I created lanes that we share between our projects, this repository contains these lanes. It is not perfect but I hope it will help.
 
 ## What can I do with your lanes?
 
@@ -12,10 +12,10 @@ By the end of 2014, I discovered a project that was going to save me hours every
 - `major`: Increment by one the project version number (ex: 2.0.1 => 3.0.0)
 - `bump`: Increment build number
 
-#### Work on apple developer portal
+#### Work on Apple developer portal
 
-- `device`: Add new device to apple portal 
-- `rematch`: Renew provisionning profiles
+- `device`: Add new device to Apple portal 
+- `rematch`: Renew provisioning profiles
 #### Automate your git process
 
 - `pr`: Create a pull request from your terminal
@@ -24,8 +24,8 @@ By the end of 2014, I discovered a project that was going to save me hours every
 #### Manage your cocoapods repositories
 
 - `install_private_repo`: Install you private pods repository on your mac or on the CI
-- `publish_pod`: Publish a new version of you pod automaticaly
-- `tag_and_pod`: Publish a new version of you pod automaticaly after creating a new tag based on the project version number
+- `publish_pod`: Publish a new version of you pod automatically
+- `tag_and_pod`: Publish a new version of you pod automatically after creating a new tag based on the project version number
 - `lint_pod`: Lint the .podspec
 
 #### Test and build your iOS apps
@@ -33,9 +33,9 @@ By the end of 2014, I discovered a project that was going to save me hours every
 - `snap`: Create Snapshots to tests if autolayout is OK
 - `testing`: Test your project and generate logs
 - `building_time`: Generate reports for building time.
-- `prod`: Create a new app in production and send it to apple
+- `prod`: Create a new app in production and send it to Apple
 - `fabric`: Create a beta version of the app with a custom icon and then send it to fabric
-- `submit`: Submit last build to the app store
+- `submit`: Submit the last build to the app store
 
 ## How to use it 
 ### Project configuration

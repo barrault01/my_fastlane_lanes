@@ -242,9 +242,12 @@ end
 #---------------------------------- Testing Lane ----------------------------------#
 
 desc "Run test for scheme"
-lane :testing do
+lane :testing do |options|
   ci = is_ci
-  if (ci == true) 
+  build_quick = false
+  build_quick = options[:quick] if defined? options[:quick] 
+
+  if (ci == true && build_quick == false) 
     reset_simulator_contents
   end
   xcpretty_json_formatter_installed = sh "bundle exec gem list | grep xcpretty-json-formatter | wc -l"
@@ -252,14 +255,14 @@ lane :testing do
   if (xcpretty_json_formatter_installed == 1)
     slack(message:"[-----:bike:-] Testing and Exporting Reports")
     scan(scheme:"#{proj[:scheme]}",
-      clean:true,
+      clean:!build_quick,
       include_simulator_logs:false,
       formatter:"xcpretty-json-formatter",
       code_coverage:true)
   else
     slack(message:"[-----:bike:-] Testing without Reports")
     scan(scheme:"#{proj[:scheme]}",
-        clean:true,
+        clean:!build_quick,
         include_simulator_logs:false,
         code_coverage:true)
   end
