@@ -2,6 +2,10 @@
 
 By the end of 2014, I discovered a project that was going to save me hours every week: [fastlane](https://github.com/fastlane/fastlane) by [KrauseFx](https://github.com/KrauseFx). After using it locally on my Mac, setting it up on my college's Macs, putting it on our CI, today is part of our daily routine. I created lanes that we share between our projects, this repository contains these lanes. It is not perfect but I hope it will help.
 
+## Adding my lanes in a new project
+
+Just run this on your project folder: 
+`curl https://raw.githubusercontent.com/barrault01/my_fastlane_lanes/master/install-fastlane.sh | bash`
 ## What can I do with your lanes?
 
 #### Change version and build number
