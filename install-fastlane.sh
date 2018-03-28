@@ -10,10 +10,9 @@ echo "Fastlane installed!!! "
 echo "Creating fastlane folder"
 mkdir fastlane
 
-echo "Create empty Fastfile"
+echo "Create basic Fastfile"
 cd fastlane
-
-printf "import_from_git(url: 'git@github.com:barrault01/my_fastlane_lanes.git', path: 'fastlane/Fastfile')\r\nfastlane_version \"2.85.0\"\r\n\r\ndefault_platform :ios\r\n\r\nplatform :ios do\r\n\r\n  \r\n after_all do |lane|\r\n   notification(message:\"Finished lane: #{lane}\")\r\n end\r\n\r\n error do |lane, exception|\r\n   notification(subtitle: \"Erro in lane: #{lane}\", message:\"Erro in lane: #{exception}\")\r\n end\r\n\r\nend\r\n" > Fastfileprintf "fastlane_version \"2.85.0\"\r\n\r\ndefault_platform :ios\r\n\r\nplatform :ios do\r\n\r\n  \r\n after_all do |lane|\r\n   notification(message:\"Finished lane: #{lane}\")\r\n end\r\n\r\n error do |lane, exception|\r\n   notification(subtitle: \"Erro in lane: #{lane}\", message:\"Erro in lane: #{exception}\")\r\n end\r\n\r\nend\r\n" > Fastfile
+printf "#import_from_git(url: 'git@github.com:barrault01/my_fastlane_lanes.git', path: 'fastlane/Fastfile')\r\nfastlane_version \"2.85.0\"\r\n\r\ndefault_platform :ios\r\n\r\nplatform :ios do\r\n\r\n  \r\n after_all do |lane|\r\n   notification(message:\"Finished lane: #{lane}\")\r\n end\r\n\r\n  desc \"Create beta build\"\r\n  lane :beta do\r\n      match(type: \"adhoc\", readonly: true)\r\n      gym(configuration: \"Release\", silent: true, clean: true, export_method: 'ad-hoc',xcargs: \"ARCHIVE=YES\")\r\n      crashlytics\r\n  end\r\n\r\n  desc \"Create prod build\"\r\n  lane :prod do\r\n      match(type: \"adhoc\", readonly: true)\r\n      gym(configuration: \"Release\", silent: true, clean: true, export_method: 'ad-hoc',xcargs: \"ARCHIVE=YES\")\r\n      pilot\r\n  end\r\n\r\n  desc \"Download all provisionning profiles\"\r\n  lane :matches do\r\n      match(type: \"appstore\", readonly: true)\r\n      match(type: \"development\", readonly: true)\r\n      match(type: \"adhoc\", readonly: true)\r\n  end\r\n\r\n error do |lane, exception|\r\n   notification(subtitle: \"Erro in lane: #{lane}\", message:\"Erro in lane: #{exception}\")\r\n end\r\n\r\nend\r\n" > Fastfile 
 
 echo "###########"
 echo "Installation completed: now just run: 'bundle exec fastlane' "
