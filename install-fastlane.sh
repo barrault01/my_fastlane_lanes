@@ -19,8 +19,7 @@ echo "Installation completed: now just run: 'bundle exec fastlane' "
 echo "###########"
 
 echo "Create basic Matchfile"
-cd fastlane
-printf "git_url \"\"\r\n\r\nteam_id \"\"\r\n\r\napp_identifier \"\"\r\n\r\username \"\"" > Matchfile
+printf "git_url \"\"\r\n\r\nteam_id \"\"\r\n\r\napp_identifier \"\"\r\n\rusername \"\"" > Matchfile
 cd ..
 
 echo "Remember to edit Matchfile"
