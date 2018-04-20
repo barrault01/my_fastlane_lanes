@@ -253,20 +253,17 @@ lane :testing do |options|
   xcpretty_json_formatter_installed = sh "bundle exec gem list | grep xcpretty-json-formatter | wc -l"
   xcpretty_json_formatter_installed = xcpretty_json_formatter_installed.to_i
   if (xcpretty_json_formatter_installed == 1)
-    slack(message:"[-----:bike:-] Testing and Exporting Reports")
     scan(scheme:"#{proj[:scheme]}",
       clean:!build_quick,
       include_simulator_logs:false,
       formatter:"xcpretty-json-formatter",
       code_coverage:true)
   else
-    slack(message:"[-----:bike:-] Testing without Reports")
     scan(scheme:"#{proj[:scheme]}",
         clean:!build_quick,
         include_simulator_logs:false,
         code_coverage:true)
   end
-  slack(message:"[:bike:------] Finish testing")
 end
 
 #----------------------- Create Snapshots to tests if autolayout is OK ------------------------#
