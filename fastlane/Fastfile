@@ -186,12 +186,6 @@ lane :install_private_repo do
   end
 end
 
-lane :publish_pod do
- ensure_git_status_clean
- install_private_repo
- sh "bundle exec pod repo push #{cocoapods[:private_repo_name]} .#{cocoapods[:podspec]} --sources='#{cocoapods[:private_repo_git_url]},https://github.com/CocoaPods/Specs.git' --allow-warnings"
-end
-
 lane :lint_pod do
  install_private_repo
  sh "bundle exec pod spec lint .#{cocoapods[:podspec]} --sources='#{cocoapods[:private_repo_git_url]},https://github.com/CocoaPods/Specs.git' --allow-warnings --quick"
@@ -230,7 +224,7 @@ lane :tag_and_pod do |options|
   add_git_tag(tag: version_number)
   push_git_tags
   push_to_git_remote
-  publish_pod
+  pod_push(path: "#{cocoapods[:podspec]}", repo: "#{cocoapods[:private_repo_git_url]}", allow_warnings: true)
   slack(
     message: "Publish new pod version for #{cocoapods[:pod_name]}",
     payload: {
